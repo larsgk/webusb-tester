@@ -1,0 +1,15 @@
+{
+  "name": "webusb-tester",
+  "version": "0.0.1",
+  "description": "empiriKit lit-html test",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "@types/w3c-web-usb": "^1.0.0",
+    "lit-html": "^0.7.x"
+  }
+}
