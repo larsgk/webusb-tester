@@ -34,14 +34,14 @@ export class MainApp extends HTMLElement {
           code { white-space: pre };
         </style>
         <div>Web USB Tester</div><br>
-        Vendor ID: <input id="vid" on-input=${(e)=>this._hexInputChanged(e,4)}/><br>
-        Product ID: <input id="pid" on-input=${(e)=>this._hexInputChanged(e,4)}/>
+        Vendor ID: <input id="vid" on-input=${(e)=>this._hexInputChanged(e,4)}/> -  
+        Product ID: <input id="pid" on-input=${(e)=>this._hexInputChanged(e,4)}/><br>
         <button on-click=${(e)=>this._doScan(e)}>PAIR NEW DEVICE</button>
-        <p>Devices: <br>${this._devicesInfo()}</p>
+        <p>Paired and connected devices: <br><br>${this._devicesInfo()}</p>
 <code>
 navigator.usb.requestDevice({ filters: [{
-    <span class$='i4 ${this._form.vid ? '' : 'disabled'}'>vendorId: 0x${this._form.vid ? this._form.vid : '????'}</span><span class$='i4 ${this._form.pid && this._form.vid ? '' : 'disabled'}'>, </span>
-    <span class$='i4 ${this._form.pid ? '' : 'disabled'}'>productId: 0x${this._form.pid ? this._form.pid : '????'}</span>
+    <span class$='${this._form.vid ? '' : 'disabled'}'>vendorId: 0x${this._form.vid ? this._form.vid : '????'}</span><span class$='i4 ${this._form.pid && this._form.vid ? '' : 'disabled'}'>, </span>
+    <span class$='${this._form.pid ? '' : 'disabled'}'>productId: 0x${this._form.pid ? this._form.pid : '????'}</span>
 }]});
 </code>
         `;
@@ -67,13 +67,6 @@ navigator.usb.requestDevice({ filters: [{
     }
   }
 
-  _indent(num) {
-    let s = '';
-    if(num > 100 || num < 1) return s;
-    while(num--) s += '&nbsp;';
-    return html`${s}`;
-  }
-
   async _tryAttachDevice(device) {
     console.log(device);
     if(!device)
@@ -87,7 +80,9 @@ navigator.usb.requestDevice({ filters: [{
 
     this._devices.push(device);
     this.invalidate();
-    return;
+    return; 
+
+    // todo: dev code below...
 
     if(device.productId === 0xD017) {
       await device.claimInterface(2);
@@ -95,9 +90,9 @@ navigator.usb.requestDevice({ filters: [{
       device.controlTransferOut({
         requestType: 'class',
         recipient: 'interface',
-        'request': 0x22,
-        'value': 0x01,
-        'index': 0x02})
+        request: 0x22,
+        value: 0x01,
+        index: 0x02})
       .then(o => {
         console.log(o);
         const newDevice = {
@@ -105,8 +100,9 @@ navigator.usb.requestDevice({ filters: [{
           endpointNumber: 5,
           type: "empiriKit|MOTION"
         };
-        this._devices.push(newDevice);
-        this._readFromDevice(newDevice);
+        // this._devices.push(newDevice);
+        // this._readFromDevice(newDevice);
+        // this.invalidate();
         this.invalidate();
       }, e => {
         console.log(e); //disconnectDevice(device);
@@ -132,14 +128,13 @@ navigator.usb.requestDevice({ filters: [{
           device: device,
           type: "WebLight"
         };
-        this._devices.push(newDevice);
+        // this._devices.push(newDevice);
+        // this.invalidate();
         this.invalidate();
       }, e => {
         console.log(e); //disconnectDevice(device);
       });
     }
-
-    
   }
 
   _checkPairedDevices() {
@@ -183,17 +178,20 @@ navigator.usb.requestDevice({ filters: [{
     }
   }
 
+  _upperHex(val, len) {
+    return val.toString(16).padStart(4,'0').toUpperCase();
+  }
+
   _devicesInfo() {
     if(!this._devices.length)
-      return "N/A";
-
+      return "- none - ";
 
     return html`
       <ul>
       ${repeat(this._devices, (d) => d.id, (d, index) => {
         const ifs = d.configuration.interfaces || [];
         return html`
-          <li>${index}: ${d.productName}</li>
+          <li>${index}: ${d.productName} - VID: 0x${this._upperHex(d.vendorId, 4)}, PID: 0x${this._upperHex(d.productId, 4)}, S/N: ${d.serialNumber}</li>
           <ul>
             ${repeat(ifs, (i) => i.id, (i, idx) => html`<li>Interface ${i.interfaceNumber} claimed: ${i.claimed}`)}
           </ul>
@@ -226,9 +224,9 @@ navigator.usb.requestDevice({ filters: [{
   }
 
   // TODO: Make generic...
-  _sendCMD(string) {
-    console.log(`Sending to serial: [${string}]\n`);
-    let data = new TextEncoder('utf-8').encode(string);
+  _sendCMD(str) {
+    console.log(`Sending to serial: [${str}]\n`);
+    let data = new TextEncoder('utf-8').encode(str);
     console.log(data);
     if (this.device) {
       this.device.transferOut(5, data);
