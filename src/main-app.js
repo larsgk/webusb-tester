@@ -3,6 +3,8 @@
 import {html, render} from '../modules/lit-html/lib/lit-extended.js';
 import {repeat} from '../modules/lit-html/lib/repeat.js';
 
+// todo: split in modules... ;)
+
 
 export class MainApp extends HTMLElement {
 
@@ -137,12 +139,14 @@ navigator.usb.requestDevice({ filters: [{
     }
   }
 
-  _checkPairedDevices() {
-    navigator.usb.getDevices()
-    .then(availableDevices => {
+  async _checkPairedDevices() {
+    try {
+      const availableDevices = await navigator.usb.getDevices();
+
       availableDevices.forEach(device => this._tryAttachDevice(device))
-    })
-    .catch(error => { console.log(error); });
+    } catch(e) {
+      console.log(e);
+    } 
 
     navigator.usb.addEventListener('connect', evt => this._tryAttachDevice(evt.device));
     navigator.usb.addEventListener('disconnect', evt => {this._deviceDisconnected(evt.device)});
@@ -150,7 +154,7 @@ navigator.usb.requestDevice({ filters: [{
 
   async _doScan(evt) {
     try {
-      let device = await navigator.usb.requestDevice({ filters: [{
+      const device = await navigator.usb.requestDevice({ filters: [{
           vendorId: this._form.vid ? Number.parseInt(this._form.vid, 16) : undefined,
           productId: this._form.pid ? Number.parseInt(this._form.pid, 16) : undefined
       }]});
